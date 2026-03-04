@@ -499,4 +499,20 @@ body {
   background: var(--color-accent-glow);
   color: var(--color-accent-light);
 }
+/* ── Notification Badge ── */
+.notification-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-rose);
+  border: 2px solid var(--color-bg-secondary);
+  border-radius: 50%;
+  z-index: 10;
+}
 
+.app-header .notification-indicator {
+  top: 10px;
+  right: 10px;
+}

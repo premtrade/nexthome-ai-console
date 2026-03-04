@@ -5,15 +5,19 @@
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "POST",
         "path": "score-lead",
-        "responseMode": "responseNode",
+        "responseMode": "respondToWebhook",
         "options": {}
       },
       "id": "webhook-lead-trigger",
       "name": "Webhook: New Lead Submission",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "webhookId": "score-lead-webhook"
     },
     {
@@ -24,7 +28,10 @@
       "name": "Validate & Clean Lead Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [450, 300]
+      "position": [
+        450,
+        300
+      ]
     },
     {
       "parameters": {
@@ -40,7 +47,10 @@
       "name": "Score Lead with AI (Flowise)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [650, 300]
+      "position": [
+        650,
+        300
+      ]
     },
     {
       "parameters": {
@@ -50,7 +60,10 @@
       "name": "Parse Lead Score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [850, 300]
+      "position": [
+        850,
+        300
+      ]
     },
     {
       "parameters": {
@@ -62,7 +75,10 @@
       "name": "Save Lead to Database",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [1050, 300],
+      "position": [
+        1050,
+        300
+      ],
       "credentials": {
         "postgres": {
           "id": "UiVjly5vgM3yn3AG",
@@ -80,7 +96,10 @@
       "name": "Find Matching Properties",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [1050, 500],
+      "position": [
+        1050,
+        500
+      ],
       "credentials": {
         "postgres": {
           "id": "UiVjly5vgM3yn3AG",
@@ -102,7 +121,10 @@
       "name": "Rank Properties with AI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1250, 500]
+      "position": [
+        1250,
+        500
+      ]
     },
     {
       "parameters": {
@@ -112,7 +134,10 @@
       "name": "Parse Property Rankings",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1450, 500]
+      "position": [
+        1450,
+        500
+      ]
     },
     {
       "parameters": {
@@ -124,7 +149,10 @@
       "name": "Save Property Matches",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [1450, 700],
+      "position": [
+        1450,
+        700
+      ],
       "credentials": {
         "postgres": {
           "id": "UiVjly5vgM3yn3AG",
@@ -140,7 +168,10 @@
       "name": "Generate CRM Tasks",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1450, 850]
+      "position": [
+        1450,
+        850
+      ]
     },
     {
       "parameters": {
@@ -152,7 +183,10 @@
       "name": "Save CRM Tasks",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [1650, 850],
+      "position": [
+        1650,
+        850
+      ],
       "credentials": {
         "postgres": {
           "id": "UiVjly5vgM3yn3AG",
@@ -168,56 +202,162 @@
       "name": "Compile Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1850, 300]
+      "position": [
+        1850,
+        300
+      ]
     },
     {
       "parameters": {},
       "id": "response-node",
       "name": "Response Node",
-      "type": "n8n-nodes-base.responseNode",
-      "typeVersion": 3.4,
-      "position": [2050, 300]
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        300
+      ]
     }
   ],
   "connections": {
     "Webhook: New Lead Submission": {
-      "main": [[{ "node": "Validate & Clean Lead Data", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Validate & Clean Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Validate & Clean Lead Data": {
-      "main": [[{ "node": "Score Lead with AI (Flowise)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Score Lead with AI (Flowise)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Score Lead with AI (Flowise)": {
-      "main": [[{ "node": "Parse Lead Score", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Lead Score": {
-      "main": [[{ "node": "Save Lead to Database", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Save Lead to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Save Lead to Database": {
       "main": [
-        [{ "node": "Find Matching Properties", "type": "main", "index": 0 }],
-        [{ "node": "Compile Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Find Matching Properties",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compile Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Find Matching Properties": {
-      "main": [[{ "node": "Rank Properties with AI", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Rank Properties with AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Rank Properties with AI": {
-      "main": [[{ "node": "Parse Property Rankings", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Property Rankings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Property Rankings": {
-      "main": [[{ "node": "Save Property Matches", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Save Property Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Save Property Matches": {
-      "main": [[{ "node": "Generate CRM Tasks", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Generate CRM Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Generate CRM Tasks": {
-      "main": [[{ "node": "Save CRM Tasks", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Save CRM Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Save CRM Tasks": {
-      "main": [[{ "node": "Compile Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Compile Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Compile Response": {
-      "main": [[{ "node": "Response Node", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Response Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {

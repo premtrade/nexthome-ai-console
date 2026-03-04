@@ -88,12 +88,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                         <Search size={16} />
                         <input type="text" placeholder="Quick search... (Ctrl+K)" aria-label="Quick search" />
                     </div>
-                    <button className="btn-secondary" style={{ padding: '10px' }} aria-label="Notifications" title="Notifications">
+                    <Link href="/alerts" className="btn-secondary" style={{ padding: '10px', position: 'relative' }} aria-label="Notifications" title="Notifications">
                         <Bell size={18} />
-                    </button>
-                    <button className="btn-secondary" style={{ padding: '10px' }} aria-label="User profile" title="Profile">
+                        <span className="notification-indicator"></span>
+                    </Link>
+                    <Link href="/settings" className="btn-secondary" style={{ padding: '10px' }} aria-label="User profile" title="Profile">
                         <User size={18} />
-                    </button>
+                    </Link>
                 </div>
             </header>
 
@@ -147,37 +148,55 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                     <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text-primary)' }}>NextHome</span>
                 </Link>
 
-                {/* Mobile Notification Icon */}
-                <button
-                    className="hamburger"
-                    style={{
-                        minWidth: '44px',
-                        minHeight: '44px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'var(--color-text-secondary)',
-                        padding: '8px',
-                        transition: 'all 0.2s ease',
-                        borderRadius: '8px',
-                        position: 'relative'
-                    }}
-                    aria-label="Notifications"
-                    title="Notifications"
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'var(--color-text-primary)';
-                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.color = 'var(--color-text-secondary)';
-                        e.currentTarget.style.background = 'none';
-                    }}
-                >
-                    <Bell size={22} />
-                </button>
+                {/* Mobile Icons */}
+                <div style={{ display: 'flex', gap: '4px' }}>
+                    <Link
+                        href="/alerts"
+                        className="hamburger"
+                        style={{
+                            minWidth: '44px',
+                            minHeight: '44px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-secondary)',
+                            padding: '8px',
+                            transition: 'all 0.2s ease',
+                            borderRadius: '8px',
+                            position: 'relative'
+                        }}
+                        aria-label="Notifications"
+                        title="Notifications"
+                    >
+                        <Bell size={22} />
+                        <span className="notification-indicator"></span>
+                    </Link>
+                    <Link
+                        href="/settings"
+                        className="hamburger"
+                        style={{
+                            minWidth: '44px',
+                            minHeight: '44px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-secondary)',
+                            padding: '8px',
+                            transition: 'all 0.2s ease',
+                            borderRadius: '8px'
+                        }}
+                        aria-label="Profile"
+                        title="Profile"
+                    >
+                        <User size={22} />
+                    </Link>
+                </div>
             </header>
 
             {/* Sidebar Overlay */}

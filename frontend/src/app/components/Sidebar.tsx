@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Building2, Users, Cpu, Search,
-    TrendingUp, Bell, Settings, Sparkles, X, ChevronRight
+    TrendingUp, Bell, Settings, Sparkles, X, ChevronRight, LogOut
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { signOut } from 'next-auth/react';
 
 const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,6 +18,7 @@ const navItems = [
     { href: '/market', label: 'Market Intel', icon: TrendingUp },
     { href: '/alerts', label: 'Alerts', icon: Bell },
     { href: '/settings', label: 'Settings', icon: Settings },
+    { href: '/inquiry', label: 'Inquiry Form', icon: Sparkles },
 ];
 
 interface SidebarProps {
@@ -182,29 +184,59 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 })}
             </nav>
 
-            {/* Footer Status - Better Visibility */}
+            {/* Footer Status & Sign Out */}
+
+            {/* Footer Status & Sign Out */}
             <div style={{
                 padding: '16px 20px',
                 borderTop: '1px solid var(--color-border)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                minHeight: '56px'
+                flexDirection: 'column',
+                gap: 12
             }}>
                 <div style={{
-                    width: 10, height: 10, borderRadius: '50%',
-                    background: 'var(--color-emerald)',
-                    boxShadow: '0 0 8px var(--color-emerald)',
-                    flexShrink: 0,
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-                }} />
-                <span style={{
-                    fontSize: 13,
-                    color: 'var(--color-text-muted)',
-                    fontWeight: 500
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    minHeight: '24px'
                 }}>
-                    Pipeline Ready
-                </span>
+                    <div style={{
+                        width: 10, height: 10, borderRadius: '50%',
+                        background: 'var(--color-emerald)',
+                        boxShadow: '0 0 8px var(--color-emerald)',
+                        flexShrink: 0,
+                        animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }} />
+                    <span style={{
+                        fontSize: 13,
+                        color: 'var(--color-text-muted)',
+                        fontWeight: 500
+                    }}>
+                        Pipeline Ready
+                    </span>
+                </div>
+
+                <button
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-rose)',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: '8px 0',
+                        transition: 'opacity 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                >
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                </button>
             </div>
 
             <style jsx>{`

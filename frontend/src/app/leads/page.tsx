@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { getLeadsList } from '@/lib/lead-scoring-api';
 import styles from '@/styles/leads-dashboard.module.css';
 import { Lead, formatPrice } from '@/app/lib/types';
-import { Mail, Phone, MapPin, TrendingUp, Calendar, Eye, Send, MoreHorizontal, Sparkles, X } from 'lucide-react';
+import { Mail, Phone, MapPin, TrendingUp, Calendar, Eye, Send, MoreHorizontal, Sparkles, X, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LeadsPage() {
     const tenantId = 'default-tenant'; // Mocking tenant_id for now
@@ -66,6 +67,21 @@ export default function LeadsPage() {
         }
     };
 
+    const handleWhatsAppSend = (lead: Lead, properties: any[]) => {
+        if (!lead.phone) {
+            alert('No phone number available for this lead.');
+            return;
+        }
+
+        const propertyList = properties.map(p => `- ${p.title} (${formatPrice(p.price)})`).join('\n');
+        const message = encodeURIComponent(
+            `Hi ${lead.name}! 👋 I found some properties that match your search:\n\n${propertyList}\n\nWould you like to schedule a viewing for any of these?`
+        );
+
+        const phone = lead.phone.replace(/[^0-9]/g, '');
+        window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    };
+
     const getPriorityColor = (score: number) => {
         if (score >= 80) return 'var(--color-rose)';
         if (score >= 50) return 'var(--color-amber)';
@@ -89,9 +105,14 @@ export default function LeadsPage() {
 
     return (
         <div className="glass-card" style={{ padding: '24px' }}>
-            <div style={{ marginBottom: '32px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>💼 Leads Dashboard</h1>
-                <p style={{ color: 'var(--color-text-muted)' }}>AI-powered lead scoring and property matching</p>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>💼 Leads Dashboard</h1>
+                    <p style={{ color: 'var(--color-text-muted)' }}>AI-powered lead scoring and property matching</p>
+                </div>
+                <Link href="/inquiry" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Plus size={16} /> Add Lead
+                </Link>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
@@ -248,7 +269,11 @@ export default function LeadsPage() {
                                 </div>
                             )}
 
-                            <button className="btn-primary" style={{ width: '100%', marginTop: '32px', padding: '14px' }} onClick={() => setSelectedMatches(null)}>
+                            <button
+                                className="btn-primary"
+                                style={{ width: '100%', marginTop: '32px', padding: '14px' }}
+                                onClick={() => handleWhatsAppSend(selectedMatches.lead, selectedMatches.properties)}
+                            >
                                 Send Recommendations via WhatsApp
                             </button>
                         </div>

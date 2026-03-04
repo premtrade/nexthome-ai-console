@@ -56,10 +56,14 @@ class AIService {
             console.warn('[AI Service] Enrichment failed, using fallback mock data:', error);
             // Mock data for demonstration purposes if AI is not wired up
             return {
-                seo_description: `Exquisite property in ${propertyData.parish}. This ${propertyData.bedrooms}-bedroom home offers unparalleled comfort and style.`,
-                meta_title: `${propertyData.title} | NextHome Luxury`,
-                meta_description: `Discover your dream home in ${propertyData.parish}. Top-tier amenities and prime location.`,
-                buyer_persona: 'Luxury seeker, young professional, or growing family.',
+                seo_description: `
+                    🏆 LIFESTYLE: Experience the pinnacle of Caribbean living in this stunning ${propertyData.bedrooms}-bedroom sanctuary in ${propertyData.parish}. 
+                    📈 INVESTMENT: Specifically curated for the ${propertyData.parish} market, this property represents a high-growth opportunity in a prime location.
+                    📍 LOCATION: Ideally situated near local amenities and the coastline, offering both privacy and accessibility.
+                `.trim(),
+                meta_title: `Luxury ${propertyData.bedrooms}BR Home in ${propertyData.parish} | NextHome AI`,
+                meta_description: `Premier real estate in ${propertyData.parish}. AI-verified property with high investment potential and luxury finishes.`,
+                buyer_persona: 'Strategic Investor / Luxury Homeseeker',
                 competitiveness: 'High'
             };
         }
@@ -73,6 +77,7 @@ class AIService {
         console.log(`[AI Service] Scoring lead: ${leadData.email}`);
 
         try {
+            console.log(`[AI Service] Calling Scoring Webhook: ${this.flowiseApiUrl}`);
             if (!this.flowiseApiUrl) {
                 throw new Error('FLOWISE_LEAD_SCORING_API_URL not configured');
             }
