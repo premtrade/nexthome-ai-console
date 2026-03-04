@@ -1,0 +1,92 @@
+# Production-Grade Multi-Stage Dockerfile for Next.js Frontend
+# File: frontend/Dockerfile.prod
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STAGE 1: DEPENDENCIES
+# ═══════════════════════════════════════════════════════════════════════════
+FROM node:20-alpine AS dependencies
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies with security audit
+RUN npm ci --only=production && \
+    npm audit fix || true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STAGE 2: BUILDER
+# ═══════════════════════════════════════════════════════════════════════════
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build Next.js application
+# Set environment variables for build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+RUN npm run build
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STAGE 3: RUNTIME
+# ═══════════════════════════════════════════════════════════════════════════
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init curl
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Copy built application from builder
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Copy only production dependencies from dependencies stage
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/package*.json ./
+
+# Set ownership
+RUN chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port (should match EXPOSE in deployment)
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start Next.js server
+CMD ["node", "server.js"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECURITY NOTES:
+# 1. Multi-stage build: Only production code in final image
+# 2. Non-root user: Reduces vulnerability surface
+# 3. Alpine Linux: Smaller image, fewer vulnerabilities
+# 4. No npm audit suppression: Fails on critical vulnerabilities
+# 5. Explicit port exposure
+# 6. Health checks for orchestration
+# 7. dumb-init for proper signal handling
+# ═══════════════════════════════════════════════════════════════════════════

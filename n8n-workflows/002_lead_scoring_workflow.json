@@ -1,0 +1,226 @@
+{
+  "id": "lead_scoring_workflow_002",
+  "name": "Lead Scoring & Property Matching",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "score-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-lead-trigger",
+      "name": "Webhook: New Lead Submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "score-lead-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate and clean lead data\nconst lead = $json;\n\nconst errors = [];\n\n// Validate required fields\nif (!lead.name || lead.name.trim() === '') {\n  errors.push('Name is required');\n}\n\nif (!lead.email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(lead.email)) {\n  errors.push('Valid email is required');\n}\n\nif (!lead.budget_min || !lead.budget_max) {\n  errors.push('Budget range is required');\n}\n\nif (lead.budget_min > lead.budget_max) {\n  errors.push('Minimum budget cannot be greater than maximum');\n}\n\nif (errors.length > 0) {\n  throw new Error(`Validation failed: ${errors.join(', ')}`);\n}\n\n// Parse budget if string\nconst budget_min = typeof lead.budget_min === 'string' \n  ? parseInt(lead.budget_min.replace(/[^0-9]/g, '')) \n  : lead.budget_min;\n\nconst budget_max = typeof lead.budget_max === 'string' \n  ? parseInt(lead.budget_max.replace(/[^0-9]/g, '')) \n  : lead.budget_max;\n\nreturn {\n  name: lead.name.trim(),\n  email: lead.email.toLowerCase().trim(),\n  phone: lead.phone || null,\n  budget_min,\n  budget_max,\n  location: lead.location || null,\n  bedrooms: lead.bedrooms ? parseInt(lead.bedrooms) : null,\n  bathrooms: lead.bathrooms ? parseFloat(lead.bathrooms) : null,\n  must_haves: lead.must_haves || null,\n  timeline: lead.timeline || 'Not specified',\n  source: lead.source || 'website',\n  contact_method: lead.contact_method || 'email',\n  tenant_id: lead.tenant_id\n};"
+      },
+      "id": "validate-lead",
+      "name": "Validate & Clean Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/prediction/LEAD_SCORING_CHATFLOW_ID",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyParametersUi": "json",
+        "body": "{\n  \"question\": \"Score this real estate lead on a 0-100 scale. Return JSON with: lead_score (0-100), purchase_likelihood (0-100%), budget_verification (credible/questionable/unrealistic), seriousness (very_high/high/medium/low), timeline_urgency (urgent/soon/flexible). Rate based on: budget realism, specific requirements, timeline clarity, contact method, and overall lead quality.\\n\\nLead data:\\nName: {{ $json.name }}\\nEmail: {{ $json.email }}\\nPhone: {{ $json.phone }}\\nBudget: ${{ $json.budget_min }} - ${{ $json.budget_max }}\\nLocation: {{ $json.location }}\\nBedrooms: {{ $json.bedrooms }}\\nBathrooms: {{ $json.bathrooms }}\\nMust-haves: {{ $json.must_haves }}\\nTimeline: {{ $json.timeline }}\\nContact Method: {{ $json.contact_method }}\\n\\nReturn ONLY valid JSON, no other text.\"\n}"
+      },
+      "id": "score-lead-flowise",
+      "name": "Score Lead with AI (Flowise)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI scoring response\ntry {\n  const response = $json.body;\n  const scoring = JSON.parse(response.text);\n  \n  return {\n    ...scoring,\n    priority: scoring.lead_score >= 80 ? 'HIGH' : scoring.lead_score >= 50 ? 'MEDIUM' : 'LOW'\n  };\n} catch (error) {\n  console.error('Failed to parse scoring:', error);\n  throw new Error(`Invalid AI response: ${error.message}`);\n}"
+      },
+      "id": "parse-scoring",
+      "name": "Parse Lead Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO leads (tenant_id, name, email, phone, budget_min, budget_max, location, bedrooms, bathrooms, must_haves, timeline, source, contact_method, lead_score, purchase_likelihood, budget_verification, seriousness, timeline_urgency, priority, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'NEW') RETURNING id, lead_score, priority",
+        "queryParams": "={{ $json[1].tenant_id }},={{ $json[0].name }},={{ $json[0].email }},={{ $json[0].phone }},={{ $json[0].budget_min }},={{ $json[0].budget_max }},={{ $json[0].location }},={{ $json[0].bedrooms }},={{ $json[0].bathrooms }},={{ $json[0].must_haves }},={{ $json[0].timeline }},={{ $json[0].source }},={{ $json[0].contact_method }},={{ $json[1].lead_score }},={{ $json[1].purchase_likelihood }},={{ $json[1].budget_verification }},={{ $json[1].seriousness }},={{ $json[1].timeline_urgency }},={{ $json[1].priority }}"
+      },
+      "id": "save-lead",
+      "name": "Save Lead to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [1050, 300],
+      "credentials": {
+        "postgres": {
+          "id": "UiVjly5vgM3yn3AG",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, address, price, bedrooms, bathrooms, sqft, parish, status, ai_enrichment FROM properties WHERE price BETWEEN $1 AND $2 AND (parish ILIKE $3 OR location ILIKE $3) AND bedrooms >= COALESCE($4, 1) AND tenant_id = $5 LIMIT 10",
+        "queryParams": "={{ $json[0].budget_min }},={{ $json[0].budget_max }},={{ '%' + ($json[0].location || '') + '%' }},={{ $json[0].bedrooms }},={{ $json[0].tenant_id }}"
+      },
+      "id": "find-properties",
+      "name": "Find Matching Properties",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [1050, 500],
+      "credentials": {
+        "postgres": {
+          "id": "UiVjly5vgM3yn3AG",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/prediction/PROPERTY_RANKING_CHATFLOW_ID",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyParametersUi": "json",
+        "body": "{\n  \"question\": \"Rank these properties for this real estate lead. For EACH property, provide a match_score (0-100) and list specific match_reasons (array) that show why it fits the lead, and mismatch_reasons (array) for any gaps.\\n\\nLead preferences:\\nBudget: ${{ $json[0].budget_min }} - ${{ $json[0].budget_max }}\\nBedrooms: {{ $json[0].bedrooms }}+\\nBathrooms: {{ $json[0].bathrooms }}+\\nLocation: {{ $json[0].location }}\\nMust-haves: {{ $json[0].must_haves }}\\nTimeline: {{ $json[0].timeline }}\\n\\nProperties to rank:\\n{{ JSON.stringify($json[1]) }}\\n\\nReturn ONLY valid JSON array with objects containing: property_id, match_score, match_reasons (array), mismatch_reasons (array). No other text.\"\n}"
+      },
+      "id": "rank-properties",
+      "name": "Rank Properties with AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate property rankings\ntry {\n  const response = $json.body;\n  const rankings = JSON.parse(response.text);\n  \n  if (!Array.isArray(rankings)) {\n    throw new Error('Expected array of ranked properties');\n  }\n  \n  return rankings.filter(r => r.match_score >= 50).sort((a, b) => b.match_score - a.match_score);\n} catch (error) {\n  console.error('Failed to parse rankings:', error);\n  return [];\n}"
+      },
+      "id": "parse-rankings",
+      "name": "Parse Property Rankings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 500]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO lead_property_matches (lead_id, property_id, tenant_id, match_score, match_reasons, mismatch_reasons) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)",
+        "queryParams": "={{ $json[2][0][0].id }},={{ $json[0][0].property_id }},={{ $json[2][0][0].tenant_id }},={{ $json[0][0].match_score }},={{ JSON.stringify($json[0][0].match_reasons) }},={{ JSON.stringify($json[0][0].mismatch_reasons) }}"
+      },
+      "id": "save-matches",
+      "name": "Save Property Matches",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [1450, 700],
+      "credentials": {
+        "postgres": {
+          "id": "UiVjly5vgM3yn3AG",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create CRM tasks based on lead score and priority\nconst leadId = $json[4][0][0].id;\nconst priority = $json[4][0][0].priority;\nconst leadScore = $json[4][0][0].lead_score;\n\nconst tasks = [];\n\n// Immediate follow-up for high-priority leads\nif (priority === 'HIGH') {\n  tasks.push({\n    title: `URGENT: Call lead (${leadScore}/100 score)`,\n    description: 'High-priority lead with strong purchase likelihood. Call immediately.',\n    action_type: 'call',\n    priority: 'HIGH',\n    due_date: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now\n    lead_id: leadId\n  });\n}\n\n// Email with property suggestions\ntasks.push({\n  title: 'Send property matches via email',\n  description: 'Send matched properties and virtual tour links',\n  action_type: 'email',\n  priority: priority === 'HIGH' ? 'HIGH' : 'MEDIUM',\n  due_date: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now\n  lead_id: leadId\n});\n\n// Schedule showings for top matches\nif (priority === 'HIGH') {\n  tasks.push({\n    title: 'Schedule property showings',\n    description: 'Arrange viewing appointments for top 3 matched properties',\n    action_type: 'showing',\n    priority: 'HIGH',\n    due_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours\n    lead_id: leadId\n  });\n}\n\n// Follow-up for medium/low leads\nif (priority !== 'HIGH') {\n  tasks.push({\n    title: 'Add to nurture campaign',\n    description: 'Add to weekly email drip campaign with relevant properties',\n    action_type: 'followup',\n    priority: 'LOW',\n    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days\n    lead_id: leadId\n  });\n}\n\nreturn tasks;"
+      },
+      "id": "create-crm-tasks",
+      "name": "Generate CRM Tasks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 850]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO crm_tasks (tenant_id, lead_id, title, description, action_type, priority, due_date, status) VALUES ($1, $2, $3, $4, $5, $6, $7, 'OPEN')",
+        "queryParams": "={{ $json[2][0][0].tenant_id }},={{ $json[0][0] }},={{ $json[0].title }},={{ $json[0].description }},={{ $json[0].action_type }},={{ $json[0].priority }},={{ $json[0].due_date.toISOString() }}"
+      },
+      "id": "save-crm-tasks",
+      "name": "Save CRM Tasks",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [1650, 850],
+      "credentials": {
+        "postgres": {
+          "id": "UiVjly5vgM3yn3AG",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compile final response\nconst leadData = $json[5];\nconst rankings = $json[3];\n\nreturn {\n  success: true,\n  lead: {\n    id: leadData[0][0].id,\n    name: $json[1].name,\n    email: $json[1].email,\n    lead_score: leadData[0][0].lead_score,\n    priority: leadData[0][0].priority\n  },\n  matched_properties: rankings.slice(0, 5),\n  next_actions: [\n    leadData[0][0].priority === 'HIGH' ? '✓ IMMEDIATE: Call lead within 30 minutes' : '✓ Send email with properties',\n    '✓ SEND: Property matches via email with virtual tours',\n    leadData[0][0].priority === 'HIGH' ? '✓ SCHEDULE: Arrange showings for top 3 properties' : '✓ ADD: To nurture campaign',\n    '✓ CRM_TASK: Created in agent dashboard'\n  ],\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "compile-response",
+      "name": "Compile Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {},
+      "id": "response-node",
+      "name": "Response Node",
+      "type": "n8n-nodes-base.responseNode",
+      "typeVersion": 3.4,
+      "position": [2050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook: New Lead Submission": {
+      "main": [[{ "node": "Validate & Clean Lead Data", "type": "main", "index": 0 }]]
+    },
+    "Validate & Clean Lead Data": {
+      "main": [[{ "node": "Score Lead with AI (Flowise)", "type": "main", "index": 0 }]]
+    },
+    "Score Lead with AI (Flowise)": {
+      "main": [[{ "node": "Parse Lead Score", "type": "main", "index": 0 }]]
+    },
+    "Parse Lead Score": {
+      "main": [[{ "node": "Save Lead to Database", "type": "main", "index": 0 }]]
+    },
+    "Save Lead to Database": {
+      "main": [
+        [{ "node": "Find Matching Properties", "type": "main", "index": 0 }],
+        [{ "node": "Compile Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Find Matching Properties": {
+      "main": [[{ "node": "Rank Properties with AI", "type": "main", "index": 0 }]]
+    },
+    "Rank Properties with AI": {
+      "main": [[{ "node": "Parse Property Rankings", "type": "main", "index": 0 }]]
+    },
+    "Parse Property Rankings": {
+      "main": [[{ "node": "Save Property Matches", "type": "main", "index": 0 }]]
+    },
+    "Save Property Matches": {
+      "main": [[{ "node": "Generate CRM Tasks", "type": "main", "index": 0 }]]
+    },
+    "Generate CRM Tasks": {
+      "main": [[{ "node": "Save CRM Tasks", "type": "main", "index": 0 }]]
+    },
+    "Save CRM Tasks": {
+      "main": [[{ "node": "Compile Response", "type": "main", "index": 0 }]]
+    },
+    "Compile Response": {
+      "main": [[{ "node": "Response Node", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Next.js
+.next/
+out/
+
+# Production
+build/
+
+# Misc
+.DS_Store
+*.pem
+
+# Env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Vercel
+.vercel
+
+# Railway CLI
+.railway/
+
+# n8n
+.n8n/
+
+# Qdrant
+qdrant_data/
+storage/
+
+# Flowise
+database.sqlite
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/lib/
+.venv/lib/
+env/lib/
+.env/lib/
+bin/
+include/
+
+# Brain/Artifacts
+.gemini/
+brain/

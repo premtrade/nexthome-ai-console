@@ -1,0 +1,304 @@
+# Production-Grade Docker Compose Configuration
+# File: docker-compose.prod.yml
+
+version: '3.9'
+
+services:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # POSTGRESQL DATABASE
+  # ═══════════════════════════════════════════════════════════════════════════
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexthome_postgres_prod
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: ${DB_NAME:-saas_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # MUST be set from secrets
+      POSTGRES_INITDB_ARGS: >
+        -c log_statement=all
+        -c log_duration=on
+        -c log_min_duration_statement=1000
+        -c shared_preload_libraries=pg_stat_statements
+        -c pg_stat_statements.track=all
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      # Database data persistence
+      - postgres_data:/var/lib/postgresql/data
+      
+      # Initialization scripts (backups, migrations)
+      - ./migrations.sql:/docker-entrypoint-initdb.d/01-migrations.sql
+      - ./backup_restore.sql:/docker-entrypoint-initdb.d/02-backup.sql
+      
+      # PostgreSQL config for production
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
+      
+      # Logs
+      - ./logs/postgres:/var/log/postgresql
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+    networks:
+      - nexthome_network
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # NEXT.JS FRONTEND APPLICATION
+  # ═══════════════════════════════════════════════════════════════════════════
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      cache_from:
+        - nexthome:frontend-cache
+    
+    image: nexthome:frontend-latest
+    container_name: nexthome_frontend_prod
+    restart: unless-stopped
+    
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${APP_URL}
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${APP_URL}
+      SENTRY_DSN: ${SENTRY_DSN}
+    
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      n8n:
+        condition: service_started
+      flowise:
+        condition: service_started
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - nexthome_network
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # N8N WORKFLOW AUTOMATION
+  # ═══════════════════════════════════════════════════════════════════════════
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: nexthome_n8n_prod
+    restart: unless-stopped
+    
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME:-n8n_db}
+      - DB_POSTGRESDB_USER=${DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD}
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-https}
+      - NODE_ENV=production
+      - WEBHOOK_TUNNEL_URL=${N8N_WEBHOOK_URL}
+      - N8N_GZIP_COMPRESSION=true
+      - N8N_LOG_LEVEL=${LOG_LEVEL:-info}
+    
+    ports:
+      - "5678:5678"
+    
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./logs/n8n:/home/node/.n8n/logs
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - nexthome_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://n8n:5678/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FLOWISE AI ORCHESTRATION
+  # ═══════════════════════════════════════════════════════════════════════════
+  flowise:
+    image: flowiseai/flowise:latest
+    container_name: nexthome_flowise_prod
+    restart: unless-stopped
+    
+    environment:
+      - PORT=3000
+      - DATABASE_PATH=/root/.flowise
+      - APIKEY_PATH=/root/.flowise
+      - LOG_PATH=/root/.flowise/logs
+      - NODE_ENV=production
+    
+    ports:
+      - "3001:3000"
+    
+    volumes:
+      - flowise_data:/root/.flowise
+      - ./logs/flowise:/root/.flowise/logs
+    
+    depends_on:
+      - postgres
+    
+    networks:
+      - nexthome_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # QDRANT VECTOR DATABASE
+  # ═══════════════════════════════════════════════════════════════════════════
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: nexthome_qdrant_prod
+    restart: unless-stopped
+    
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC
+    
+    volumes:
+      - qdrant_data:/qdrant/storage
+      - ./qdrant.yaml:/qdrant/config/qdrant.yaml
+    
+    environment:
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+    
+    networks:
+      - nexthome_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # NGINX REVERSE PROXY (Optional - for load balancing and SSL)
+  # ═══════════════════════════════════════════════════════════════════════════
+  nginx:
+    image: nginx:alpine
+    container_name: nexthome_nginx_prod
+    restart: unless-stopped
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl/certs:/etc/nginx/certs:ro
+      - ./ssl/dhparam.pem:/etc/nginx/dhparam.pem:ro
+      - ./logs/nginx:/var/log/nginx
+    
+    depends_on:
+      - frontend
+      - n8n
+      - flowise
+    
+    networks:
+      - nexthome_network
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VOLUMES - Data Persistence
+# ═══════════════════════════════════════════════════════════════════════════
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/postgres  # Update path for your system
+  
+  n8n_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/n8n
+  
+  flowise_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/flowise
+  
+  qdrant_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/qdrant
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NETWORKS - Service Communication
+# ═══════════════════════════════════════════════════════════════════════════
+networks:
+  nexthome_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

@@ -1,0 +1,436 @@
+.dashboardContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.header p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+/* Controls Section */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.filterGroup,
+.sortGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filterGroup label,
+.sortGroup label {
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.filterButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.filterBtn {
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  background: white;
+  color: #333;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filterBtn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.filterBtn.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.sortSelect {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.sortSelect:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* Error Alert */
+.errorAlert {
+  background-color: #fee;
+  border-left: 4px solid #f44;
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  color: #c33;
+}
+
+/* Loading State */
+.loadingState {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #eee;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingState p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 80px 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.emptyIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.emptyState h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.emptyState p {
+  font-size: 14px;
+  color: #999;
+  margin: 0;
+}
+
+/* Table */
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+
+.leadsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.leadsTable thead {
+  background: #f8f9fa;
+  border-bottom: 2px solid #eee;
+}
+
+.leadsTable thead th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.leadsTable tbody td {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.leadsTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.leadRow:last-child td {
+  border-bottom: none;
+}
+
+/* Table Cells */
+.nameCell {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.leadName {
+  display: flex;
+  align-items: center;
+}
+
+.leadsTable a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.leadsTable a:hover {
+  text-decoration: underline;
+}
+
+.notAvailable {
+  color: #999;
+  font-style: italic;
+}
+
+/* Score Section */
+.scoreContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scoreBar {
+  flex: 1;
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.scoreBarFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.scoreText {
+  min-width: 35px;
+  text-align: right;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Badge Styles */
+.priorityBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  background: #95a5a6;
+}
+
+.statusBadge.new {
+  background: #3498db;
+}
+
+.statusBadge.contacted {
+  background: #f39c12;
+}
+
+.statusBadge.converted {
+  background: #27ae60;
+}
+
+.statusBadge.lost {
+  background: #e74c3c;
+}
+
+/* Date Cell */
+.dateCell {
+  color: #999;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.actionBtn {
+  padding: 6px 10px;
+  border: none;
+  background: #f0f0f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.actionBtn:hover {
+  background: #667eea;
+  transform: scale(1.1);
+}
+
+/* Stats Section */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.statCard {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: #999;
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterGroup,
+  .sortGroup {
+    width: 100%;
+  }
+
+  .filterButtons {
+    flex-wrap: wrap;
+  }
+
+  .leadsTable {
+    font-size: 13px;
+  }
+
+  .leadsTable thead th,
+  .leadsTable tbody td {
+    padding: 12px;
+  }
+
+  .actionBtn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboardContainer {
+    padding: 20px 10px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+  }
+
+  .leadsTable {
+    min-width: 800px;
+  }
+
+  .actionButtons {
+    gap: 4px;
+  }
+
+  .actionBtn {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .header h1 {
+    font-size: 20px;
+  }
+
+  .leadsTable {
+    font-size: 11px;
+  }
+
+  .leadsTable thead th,
+  .leadsTable tbody td {
+    padding: 8px;
+  }
+}
