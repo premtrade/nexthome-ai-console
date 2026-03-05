@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useData } from '@/app/lib/useData';
 import { formatPrice, getCompBadgeClass, getPersonaIcon, PARISHES } from '@/app/lib/types';
 import type { Property } from '@/app/lib/types';
-import { Search, MapPin, Bed, Bath, Sparkles, SlidersHorizontal, X } from 'lucide-react';
+import { Search, MapPin, Bed, Bath, Sparkles, SlidersHorizontal, X, Share2 } from 'lucide-react';
 
 export default function SearchPage() {
     const { data } = useData(15000);
@@ -46,6 +46,20 @@ export default function SearchPage() {
         const topParish = [...new Set(results.map(p => p.parish))].join(', ');
         return `Found ${results.length} matching properties across ${topParish}. Average price: ${formatPrice(avgPrice)}. ${underpriced > 0 ? `${underpriced} are flagged as underpriced — potential investment opportunities.` : ''}`;
     }, [results]);
+
+    const handleShare = async (p: Property) => {
+        const text = `Check out this property: ${p.title} in ${p.parish} for ${formatPrice(p.price)}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: p.title, text, url: window.location.href });
+            } catch (err) {
+                console.log('Share canceled', err);
+            }
+        } else {
+            await navigator.clipboard.writeText(text);
+            alert('Property details copied to clipboard!');
+        }
+    };
 
     return (
         <div className="animate-fade-in">
@@ -167,11 +181,16 @@ export default function SearchPage() {
                                 <div style={{ display: 'flex', gap: 6 }}>
                                     {p.competitiveness && <span className={`badge ${getCompBadgeClass(p.competitiveness)}`}>{p.competitiveness}</span>}
                                 </div>
-                                {p.buyer_persona && (
-                                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                                        {getPersonaIcon(p.buyer_persona)} {p.buyer_persona}
-                                    </span>
-                                )}
+                                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                    {p.buyer_persona && (
+                                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                                            {getPersonaIcon(p.buyer_persona)} {p.buyer_persona}
+                                        </span>
+                                    )}
+                                    <button onClick={() => handleShare(p)} className="btn-secondary" style={{ padding: 6, borderRadius: 6 }} title="Share Property">
+                                        <Share2 size={14} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

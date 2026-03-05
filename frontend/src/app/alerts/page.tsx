@@ -20,7 +20,7 @@ interface Alert {
 }
 
 export default function AlertsPage() {
-    const { data, loading, refresh } = useData(10000);
+    const { data, loading, isRefreshing, refresh } = useData(10000);
 
     const alerts = useMemo(() => {
         if (!data) return [];
@@ -123,11 +123,13 @@ export default function AlertsPage() {
                     <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Alerts</h1>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>{alerts.length} active alerts</p>
                 </div>
-                <button className="btn-secondary" onClick={refresh}><RefreshCw size={14} /></button>
+                <button className="btn-secondary" onClick={refresh} disabled={isRefreshing}>
+                    <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+                </button>
             </div>
 
             {/* Alert Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+            <div className="responsive-grid" style={{ marginBottom: 28, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                 <div className="kpi-card rose" style={{ padding: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <AlertTriangle size={16} color="var(--color-rose)" />

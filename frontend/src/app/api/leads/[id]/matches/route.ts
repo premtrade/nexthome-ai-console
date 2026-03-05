@@ -26,12 +26,25 @@ export async function POST(
             ['active']
         );
 
-        // 3. Trigger AI matching
-        const matchedIds = await aiService.matchPropertiesForLead(
-            id,
-            lead.raw_inquiry || '',
-            propertiesRes.rows
+        // 3. Check for existing n8n matches or trigger fallback
+        const existingMatchesRes = await query(
+            'SELECT property_id FROM lead_property_matches WHERE lead_id = $1 ORDER BY match_score DESC',
+            [id]
         );
+
+        let matchedIds: string[] = [];
+
+        if ((existingMatchesRes.rowCount ?? 0) > 0) {
+            matchedIds = existingMatchesRes.rows.map(row => row.property_id);
+        } else if (lead.matched_property_ids && lead.matched_property_ids.length > 0) {
+            matchedIds = lead.matched_property_ids;
+        } else {
+            matchedIds = await aiService.matchPropertiesForLead(
+                id,
+                lead.raw_inquiry || '',
+                propertiesRes.rows
+            );
+        }
 
         // 4. Update lead with matches
         const updateRes = await query(

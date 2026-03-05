@@ -6,7 +6,7 @@ import { formatPrice, timeAgo, getCompBadgeClass, getPersonaIcon, PARISHES } fro
 import type { Property } from '@/app/lib/types';
 import {
     Plus, Search, RefreshCw, X, MapPin, Bed, Bath,
-    DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown
+    DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown, Edit2
 } from 'lucide-react';
 
 export default function PropertiesPage() {
@@ -16,8 +16,10 @@ export default function PropertiesPage() {
     const [filterStatus, setFilterStatus] = useState('');
     const [selected, setSelected] = useState<Property | null>(null);
     const [showAdd, setShowAdd] = useState(false);
+    const [showEdit, setShowEdit] = useState(false);
     const [enriching, setEnriching] = useState<string | null>(null);
     const [addForm, setAddForm] = useState({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2' });
+    const [editForm, setEditForm] = useState({ id: '', title: '', description: '', price: '', parish: '', bedrooms: '', bathrooms: '' });
     const [tab, setTab] = useState<'seo' | 'persona' | 'market'>('seo');
 
     if (loading || !data) {
@@ -51,6 +53,24 @@ export default function PropertiesPage() {
         });
         setShowAdd(false);
         setAddForm({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2' });
+    };
+
+    const handleEdit = async () => {
+        if (!editForm.title || !editForm.id) return;
+        await postAction('edit_property', {
+            id: editForm.id,
+            title: editForm.title,
+            description: editForm.description,
+            price: parseFloat(editForm.price) || 0,
+            parish: editForm.parish,
+            bedrooms: parseInt(editForm.bedrooms) || 0,
+            bathrooms: parseInt(editForm.bathrooms) || 0,
+        });
+        setShowEdit(false);
+        // Update selected if needed
+        if (selected?.id === editForm.id) {
+            setSelected({ ...selected, ...editForm, price: parseFloat(editForm.price) || 0, bedrooms: parseInt(editForm.bedrooms) || 0, bathrooms: parseInt(editForm.bathrooms) || 0 } as any);
+        }
     };
 
     const handleReprocess = async (id: string) => {
@@ -289,6 +309,20 @@ export default function PropertiesPage() {
                                 >
                                     <Sparkles size={14} /> {enriching === selected.id ? 'Enriching...' : 'Enrich with AI'}
                                 </button>
+                                <button className="btn-secondary" onClick={() => {
+                                    setEditForm({
+                                        id: selected.id,
+                                        title: selected.title,
+                                        description: selected.description || '',
+                                        price: selected.price.toString(),
+                                        parish: selected.parish || 'St. James',
+                                        bedrooms: selected.bedrooms.toString(),
+                                        bathrooms: selected.bathrooms.toString()
+                                    });
+                                    setShowEdit(true);
+                                }} style={{ flex: 1 }}>
+                                    <Edit2 size={14} /> Edit
+                                </button>
                                 <button className="btn-secondary" onClick={() => handleReprocess(selected.id)} style={{ flex: 1 }}>
                                     <RotateCcw size={14} /> Clear AI
                                 </button>
@@ -318,8 +352,20 @@ export default function PropertiesPage() {
                                 <input className="input-field" placeholder="e.g. Oceanfront Villa" value={addForm.title} onChange={e => setAddForm({ ...addForm, title: e.target.value })} />
                             </div>
                             <div>
-                                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Description</label>
-                                <textarea className="input-field" rows={4} placeholder="Describe the property..." value={addForm.description} onChange={e => setAddForm({ ...addForm, description: e.target.value })} style={{ resize: 'vertical' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', display: 'block' }}>Description</label>
+                                    <span style={{ fontSize: 10, color: addForm.description.length > 500 ? 'var(--color-rose)' : 'var(--color-text-muted)' }}>
+                                        {addForm.description.length} / 1000
+                                    </span>
+                                </div>
+                                <textarea
+                                    className="input-field"
+                                    rows={6}
+                                    placeholder="Describe the property's unique features, view, and atmosphere..."
+                                    value={addForm.description}
+                                    onChange={e => setAddForm({ ...addForm, description: e.target.value.slice(0, 1000) })}
+                                    style={{ resize: 'vertical', minHeight: '120px', lineHeight: '1.5', padding: '12px' }}
+                                />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                 <div>
@@ -347,6 +393,65 @@ export default function PropertiesPage() {
                             </div>
                             <button className="btn-primary" onClick={handleAdd} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
                                 <Plus size={16} /> Add Property
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+            {/* Edit Property Modal */}
+            {showEdit && (
+                <>
+                    <div className="detail-panel-overlay" onClick={() => setShowEdit(false)} />
+                    <div className="detail-panel animate-slide-in">
+                        <div style={{ padding: 24, borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ fontSize: 18, fontWeight: 700 }}>Edit Property</h2>
+                            <button onClick={() => setShowEdit(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Title *</label>
+                                <input className="input-field" placeholder="e.g. Oceanfront Villa" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} />
+                            </div>
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', display: 'block' }}>Description</label>
+                                    <span style={{ fontSize: 10, color: editForm.description.length > 500 ? 'var(--color-rose)' : 'var(--color-text-muted)' }}>
+                                        {editForm.description.length} / 1000
+                                    </span>
+                                </div>
+                                <textarea
+                                    className="input-field"
+                                    rows={6}
+                                    placeholder="Describe the property..."
+                                    value={editForm.description}
+                                    onChange={e => setEditForm({ ...editForm, description: e.target.value.slice(0, 1000) })}
+                                    style={{ resize: 'vertical', minHeight: '120px', lineHeight: '1.5', padding: '12px' }}
+                                />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Price ($)</label>
+                                    <input className="input-field" type="number" placeholder="2500000" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Parish</label>
+                                    <select className="input-field" value={editForm.parish} onChange={e => setEditForm({ ...editForm, parish: e.target.value })}>
+                                        {PARISHES.map(p => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Bedrooms</label>
+                                    <input className="input-field" type="number" value={editForm.bedrooms} onChange={e => setEditForm({ ...editForm, bedrooms: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Bathrooms</label>
+                                    <input className="input-field" type="number" value={editForm.bathrooms} onChange={e => setEditForm({ ...editForm, bathrooms: e.target.value })} />
+                                </div>
+                            </div>
+                            <button className="btn-primary" onClick={handleEdit} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
+                                <RefreshCw size={16} /> Update Property
                             </button>
                         </div>
                     </div>

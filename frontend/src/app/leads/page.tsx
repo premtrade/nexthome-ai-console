@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getLeadsList } from '@/lib/lead-scoring-api';
 import styles from '@/styles/leads-dashboard.module.css';
 import { Lead, formatPrice } from '@/app/lib/types';
-import { Mail, Phone, MapPin, TrendingUp, Calendar, Eye, Send, MoreHorizontal, Sparkles, X, Plus } from 'lucide-react';
+import { Mail, Phone, MapPin, TrendingUp, Calendar, Eye, Send, MoreHorizontal, Sparkles, X, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LeadsPage() {
@@ -14,6 +14,7 @@ export default function LeadsPage() {
     const [error, setError] = useState<string | null>(null);
     const [matching, setMatching] = useState<string | null>(null);
     const [selectedMatches, setSelectedMatches] = useState<{ lead: Lead, properties: any[] } | null>(null);
+    const [viewLead, setViewLead] = useState<Lead | null>(null);
     const [filter, setFilter] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
     const [sortBy, setSortBy] = useState<'score' | 'date' | 'name'>('score');
 
@@ -64,6 +65,17 @@ export default function LeadsPage() {
             alert('AI Matching failed. Check connection.');
         } finally {
             setMatching(null);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this lead?')) return;
+        try {
+            const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete lead');
+            setLeads(leads.filter(l => l.id !== id));
+        } catch (err) {
+            alert('Could not delete lead');
         }
     };
 
@@ -226,7 +238,8 @@ export default function LeadsPage() {
                                                 >
                                                     <Sparkles size={14} /> {matching === lead.id ? 'Matching...' : 'Match Properties'}
                                                 </button>
-                                                <button className="btn-secondary" style={{ padding: '8px' }} title="View Details"><Eye size={16} /></button>
+                                                <button className="btn-secondary" style={{ padding: '8px' }} title="View Details" onClick={() => setViewLead(lead)}><Eye size={16} /></button>
+                                                <button className="btn-secondary" style={{ padding: '8px', color: 'var(--color-rose)', borderColor: 'rgba(244, 63, 94, 0.3)' }} title="Delete Lead" onClick={() => handleDelete(lead.id)}><Trash2 size={16} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -235,6 +248,62 @@ export default function LeadsPage() {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {/* View Lead Modal */}
+            {viewLead && (
+                <>
+                    <div className="detail-panel-overlay" onClick={() => setViewLead(null)} />
+                    <div className="detail-panel animate-slide-in" style={{ width: '500px' }}>
+                        <div style={{ padding: '24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: 800 }}>Lead Details</h2>
+                            <button onClick={() => setViewLead(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={20} /></button>
+                        </div>
+                        <div style={{ padding: '24px' }}>
+                            <div style={{ marginBottom: '24px' }}>
+                                <h3 style={{ fontSize: '20px', fontWeight: 700 }}>{viewLead.name}</h3>
+                                <div style={{ display: 'flex', gap: '16px', color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '8px' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Mail size={14} /> {viewLead.email}</span>
+                                    {viewLead.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={14} /> {viewLead.phone}</span>}
+                                </div>
+                            </div>
+
+                            <div className="glass-card" style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', marginBottom: '24px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 600 }}>Raw Inquiry</div>
+                                <div style={{ lineHeight: 1.5, fontSize: '14px' }}>{viewLead.raw_inquiry || 'No inquiry provided'}</div>
+                            </div>
+
+                            <div className="glass-card" style={{ padding: '16px', background: 'rgba(255,255,255,0.03)' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '16px', fontWeight: 600 }}>AI Assessment</div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Score</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 700, color: getPriorityColor(viewLead.ai_score) }}>{viewLead.ai_score}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Priority</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 700 }}>{getPriorityLabel(viewLead.ai_score)}</div>
+                                    </div>
+                                    <div style={{ gridColumn: '1 / -1' }}>
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Summary</div>
+                                        <div style={{ fontSize: '14px', marginTop: '4px' }}>{viewLead.ai_assessment?.summary || 'No summary available'}</div>
+                                    </div>
+                                    <div style={{ gridColumn: '1 / -1' }}>
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Matched Properties</div>
+                                        <div style={{ fontSize: '14px', marginTop: '4px' }}>{viewLead.matched_property_ids?.length || 0} properties</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '32px', display: 'flex', gap: '16px' }}>
+                                <a href={`mailto:${viewLead.email}`} className="btn-primary" style={{ flex: 1, textAlign: 'center', padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                                    <Mail size={16} /> Email Lead
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
 
             {/* Match Modal */}

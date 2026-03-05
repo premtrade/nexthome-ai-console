@@ -28,9 +28,17 @@ export async function POST(request: Request) {
         }
 
         // 1. Process with AI (Score and match properties)
-        const aiResult = await aiService.scoreLead({ name, email, phone, raw_inquiry });
+        const aiResult = await aiService.scoreLead({ name, email, phone, raw_inquiry, tenant_id });
 
-        // 2. Save to database
+        if (aiResult.handledByN8n) {
+            // n8n workflow handled the database insertions (lead, matches, tasks)
+            return NextResponse.json({
+                success: true,
+                ...aiResult.lead
+            });
+        }
+
+        // 2. Save to database manually if n8n fallback was used
         const result = await query(
             `INSERT INTO leads (
                 tenant_id, name, email, phone, raw_inquiry, 

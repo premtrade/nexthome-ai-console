@@ -15,32 +15,43 @@ export async function GET(request: Request) {
         );
         const total = parseInt(countResult.rows[0]?.total || '0');
 
+        const includeStats = searchParams.get('stats') === 'true';
+
         // Get paginated properties
         const propertiesResult = await query(
             `SELECT id, tenant_id, title, description, price, parish, bedrooms, bathrooms, lot_size, status, ai_processed, seo_description, meta_title, meta_description, buyer_persona, competitiveness, created_at, updated_at FROM properties ORDER BY updated_at DESC LIMIT $1 OFFSET $2`,
             [limit, offset]
         );
 
-        // Get execution stats  
-        const execStatsResult = await query(
-            `SELECT status, COUNT(*) as count FROM execution_entity GROUP BY status`
-        );
+        let execStats = [];
+        let recentExecs = [];
+        let errors = [];
 
-        // Get recent executions
-        const recentExecsResult = await query(
-            `SELECT id, status, "startedAt", "stoppedAt" FROM execution_entity ORDER BY "startedAt" DESC LIMIT 20`
-        );
+        if (includeStats) {
+            // Get execution stats  
+            const execStatsResult = await query(
+                `SELECT status, COUNT(*) as count FROM execution_entity GROUP BY status`
+            );
+            execStats = execStatsResult.rows;
 
-        // Get AI errors
-        const errorsResult = await query(
-            `SELECT * FROM ai_errors ORDER BY created_at DESC LIMIT 20`
-        );
+            // Get recent executions
+            const recentExecsResult = await query(
+                `SELECT id, status, "startedAt", "stoppedAt" FROM execution_entity ORDER BY "startedAt" DESC LIMIT 20`
+            );
+            recentExecs = recentExecsResult.rows;
+
+            // Get AI errors
+            const errorsResult = await query(
+                `SELECT * FROM ai_errors ORDER BY created_at DESC LIMIT 20`
+            );
+            errors = errorsResult.rows;
+        }
 
         return NextResponse.json({
             properties: propertiesResult.rows,
-            execStats: execStatsResult.rows,
-            recentExecs: recentExecsResult.rows,
-            errors: errorsResult.rows,
+            execStats,
+            recentExecs,
+            errors,
             pagination: {
                 page,
                 limit,
@@ -87,6 +98,18 @@ export async function POST(request: Request) {
 
         if (action === 'delete_property') {
             await query(`DELETE FROM properties WHERE id = $1`, [data.id]);
+            return NextResponse.json({ success: true });
+        }
+
+        if (action === 'edit_property') {
+            const { id, title, description, price, parish, bedrooms, bathrooms } = data;
+            const sql = `
+                UPDATE properties 
+                SET title = $1, description = $2, price = $3, parish = $4, bedrooms = $5, bathrooms = $6, updated_at = NOW() 
+                WHERE id = $7
+            `;
+            const params = [title, description, price, parish, bedrooms, bathrooms, id];
+            await query(sql, params);
             return NextResponse.json({ success: true });
         }
 

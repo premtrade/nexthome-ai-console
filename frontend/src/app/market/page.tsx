@@ -135,24 +135,41 @@ export default function MarketPage() {
                 </div>
 
                 <div className="glass-card" style={{ padding: 24 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 24 }}>Market Competitiveness</h3>
-                    <div style={{ height: 300 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={analytics.compData}
-                                    cx="50%" cy="50%"
-                                    innerRadius={60} outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {analytics.compData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={compColors[entry.name as keyof typeof compColors]} stroke="none" />
-                                    ))}
-                                </Pie>
-                                <Tooltip contentStyle={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <BarChart3 size={18} color="var(--color-accent)" /> Market Competitiveness
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ height: 250, flex: 1 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={analytics.compData}
+                                        cx="50%" cy="50%"
+                                        innerRadius={70} outerRadius={90}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {analytics.compData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={compColors[entry.name as keyof typeof compColors]} stroke="none" />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            {analytics.compData.map(entry => (
+                                <div key={entry.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 12, height: 12, borderRadius: 3, background: compColors[entry.name as keyof typeof compColors] }} />
+                                        <span style={{ fontSize: 13, fontWeight: 600 }}>{entry.name}</span>
+                                    </div>
+                                    <span style={{ fontSize: 14, fontWeight: 700 }}>
+                                        {Math.round((entry.value / analytics.total) * 100)}%
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

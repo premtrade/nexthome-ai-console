@@ -1,0 +1,79 @@
+{
+    "id": "enrich-property-workflow",
+    "name": "Property Enrichment",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "enrich-property",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "name": "Webhook: Enrich Property",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "enrich-property"
+        },
+        {
+            "parameters": {
+                "url": "http://flowise:3000/api/v1/prediction/YOUR_FLOWISE_CHATFLOW_ID",
+                "method": "POST",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "bodyParametersUi": "json",
+                "body": "={\n  \"question\": \"Generate a JSON object with the following fields for this property:\\n1. \\\"seo_description\\\": A 2-sentence highly engaging marketing description.\\n2. \\\"meta_title\\\": A short, catchy title for SEO (under 60 chars).\\n3. \\\"meta_description\\\": A summary for search engines (under 160 chars).\\n4. \\\"buyer_persona\\\": The ideal target demographic (e.g., 'Luxury Host', 'First-time Buyer').\\n5. \\\"competitiveness\\\": Either 'High', 'Medium', or 'Low' based on the price point.\\n\\nProperty Details:\\nTitle: {{ $json[\"body\"][\"title\"] }}\\nPrice: {{ $json[\"body\"][\"price\"] }}\\nBedrooms: {{ $json[\"body\"][\"bedrooms\"] }}\\nBathrooms: {{ $json[\"body\"][\"bathrooms\"] }}\\nLocation: {{ $json[\"body\"][\"parish\"] }}\\nDescription: {{ $json[\"body\"][\"description\"] }}\\n\\nRespond ONLY with valid JSON.\"\n}"
+            },
+            "name": "Flowise: Generate Meta",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                460,
+                300
+            ],
+            "continueOnFail": true
+        },
+        {
+            "parameters": {
+                "jsCode": "try {\n  if ($input.all()[0].json.error) {\n    throw new Error($input.all()[0].json.error);\n  }\n  \n  const rawText = $input.all()[0].json.text;\n  // Attempt to parse JSON from Flowise output block\n  const jsonStr = rawText.replace(/```json\\n?|```/g, '').trim();\n  const parsed = JSON.parse(jsonStr);\n  \n  return {\n    seo_description: parsed.seo_description || \"Beautiful property in an excellent location.\",\n    meta_title: parsed.meta_title || \"Premium Property Listing\",\n    meta_description: parsed.meta_description || \"View this fantastic property on NextHome.\",\n    buyer_persona: parsed.buyer_persona || \"General Buyer\",\n    competitiveness: parsed.competitiveness || \"Medium\"\n  };\n} catch (error) {\n  // Fallback if AI fails or Flowise is unreachable\n  const p = $node[\"Webhook: Enrich Property\"].json.body;\n  return {\n    seo_description: `Fall in love with this stunning ${p.bedrooms || 1} bedroom property in ${p.parish || 'Jamaica'}. Immerse yourself in quality living.`,\n    meta_title: `${p.title || 'Property'} | NextHome`,\n    meta_description: `Explore this amazing real estate opportunity in ${p.parish || ''}. Contact us today.`,\n    buyer_persona: \"Value Seeker\",\n    competitiveness: \"Fair\"\n  };\n}"
+            },
+            "name": "Parse output or Fallback",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                680,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook: Enrich Property": {
+            "main": [
+                [
+                    {
+                        "node": "Flowise: Generate Meta",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Flowise: Generate Meta": {
+            "main": [
+                [
+                    {
+                        "node": "Parse output or Fallback",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {}
+}
