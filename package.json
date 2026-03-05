@@ -1,12 +1,7 @@
 {
   "name": "nexthome-root",
   "private": true,
-  "scripts": {
-    "build": "cd frontend && next build",
-    "install": "cd frontend && npm install"
-  },
   "dependencies": {
-    "next": "15.2.0",
     "pg": "^8.19.0",
     "uuid": "^13.0.0"
   }
