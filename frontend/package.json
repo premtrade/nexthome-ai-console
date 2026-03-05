@@ -14,7 +14,7 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "lucide-react": "^0.575.0",
-    "next": "latest",
+    "next": "15.5.12",
     "next-auth": "^4.24.13",
     "pg": "^8.18.0",
     "react": "19.0.0",
@@ -28,7 +28,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "latest",
+    "eslint-config-next": "15.5.12",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
