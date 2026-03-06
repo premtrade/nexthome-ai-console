@@ -10,6 +10,6 @@
         "restartPolicyType": "ON_FAILURE",
         "restartPolicyMaxRetries": 10,
         "root": "frontend",
-        "startCommand": "cd frontend && npm start"
+        "startCommand": "npm start"
     }
 }
