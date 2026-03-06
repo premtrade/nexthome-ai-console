@@ -9,7 +9,9 @@
     "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start -p $PORT",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "node migrate_railway.js",
+    "db:push": "node migrate_railway.js"
   },
   "dependencies": {
     "clsx": "^2.1.1",
