@@ -18,6 +18,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY frontend/ ./
 
+# Remove .env.local to prevent it from being baked into the image
+RUN rm -f .env.local
+
 # Build the Next.js application
 RUN npm run build
 
