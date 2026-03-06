@@ -1,8 +1,0 @@
-[nodejs]
-version = "20"
-
-[build]
-build = "cd frontend && npm install && npm run build"
-
-[start]
-run = "cd frontend && npm start"
