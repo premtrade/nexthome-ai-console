@@ -1,8 +1,8 @@
-[providers.nodejs]
-nodeVersion = "20"
+[nodejs]
+version = "20"
 
 [build]
-buildCommand = "cd frontend && npm install && npm run build"
+build = "cd frontend && npm install && npm run build"
 
 [start]
-startCommand = "cd frontend && npm start"
+run = "cd frontend && npm start"
