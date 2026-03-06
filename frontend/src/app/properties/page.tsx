@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useData } from '@/app/lib/useData';
 import { formatPrice, timeAgo, getCompBadgeClass, getPersonaIcon, PARISHES } from '@/app/lib/types';
 import type { Property } from '@/app/lib/types';
@@ -8,6 +8,13 @@ import {
     Plus, Search, RefreshCw, X, MapPin, Bed, Bath,
     DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown, Edit2
 } from 'lucide-react';
+
+// Memoized form handlers to prevent unnecessary re-renders
+const useFormHandlers = (setForm: React.Dispatch<React.SetStateAction<any>>) => {
+    return useCallback((field: string, value: string) => {
+        setForm((prev: any) => ({ ...prev, [field]: value }));
+    }, [setForm]);
+};
 
 export default function PropertiesPage() {
     const { data, loading, postAction, refresh, pagination, page, goToPage } = useData(10000);
@@ -21,6 +28,16 @@ export default function PropertiesPage() {
     const [addForm, setAddForm] = useState({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2' });
     const [editForm, setEditForm] = useState({ id: '', title: '', description: '', price: '', parish: '', bedrooms: '', bathrooms: '' });
     const [tab, setTab] = useState<'seo' | 'persona' | 'market'>('seo');
+    const [submitting, setSubmitting] = useState(false);
+
+    // Memoized form handlers for better performance
+    const handleAddFormChange = useCallback((field: string, value: string) => {
+        setAddForm(prev => ({ ...prev, [field]: value }));
+    }, []);
+
+    const handleEditFormChange = useCallback((field: string, value: string) => {
+        setEditForm(prev => ({ ...prev, [field]: value }));
+    }, []);
 
     if (loading || !data) {
         return (
@@ -42,34 +59,43 @@ export default function PropertiesPage() {
     });
 
     const handleAdd = async () => {
-        if (!addForm.title) return;
-        await postAction('add_property', {
-            title: addForm.title,
-            description: addForm.description,
-            price: parseFloat(addForm.price) || 0,
-            parish: addForm.parish,
-            bedrooms: parseInt(addForm.bedrooms) || 0,
-            bathrooms: parseInt(addForm.bathrooms) || 0,
-        });
-        setShowAdd(false);
-        setAddForm({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2' });
+        if (!addForm.title || submitting) return;
+        setSubmitting(true);
+        try {
+            await postAction('add_property', {
+                title: addForm.title,
+                description: addForm.description,
+                price: parseFloat(addForm.price) || 0,
+                parish: addForm.parish,
+                bedrooms: parseInt(addForm.bedrooms) || 0,
+                bathrooms: parseInt(addForm.bathrooms) || 0,
+            });
+            setShowAdd(false);
+            setAddForm({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2' });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleEdit = async () => {
-        if (!editForm.title || !editForm.id) return;
-        await postAction('edit_property', {
-            id: editForm.id,
-            title: editForm.title,
-            description: editForm.description,
-            price: parseFloat(editForm.price) || 0,
-            parish: editForm.parish,
-            bedrooms: parseInt(editForm.bedrooms) || 0,
-            bathrooms: parseInt(editForm.bathrooms) || 0,
-        });
-        setShowEdit(false);
-        // Update selected if needed
-        if (selected?.id === editForm.id) {
-            setSelected({ ...selected, ...editForm, price: parseFloat(editForm.price) || 0, bedrooms: parseInt(editForm.bedrooms) || 0, bathrooms: parseInt(editForm.bathrooms) || 0 } as any);
+        if (!editForm.title || !editForm.id || submitting) return;
+        setSubmitting(true);
+        try {
+            await postAction('edit_property', {
+                id: editForm.id,
+                title: editForm.title,
+                description: editForm.description,
+                price: parseFloat(editForm.price) || 0,
+                parish: editForm.parish,
+                bedrooms: parseInt(editForm.bedrooms) || 0,
+                bathrooms: parseInt(editForm.bathrooms) || 0,
+            });
+            setShowEdit(false);
+            if (selected?.id === editForm.id) {
+                setSelected({ ...selected, ...editForm, price: parseFloat(editForm.price) || 0, bedrooms: parseInt(editForm.bedrooms) || 0, bathrooms: parseInt(editForm.bathrooms) || 0 } as any);
+            }
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -349,7 +375,7 @@ export default function PropertiesPage() {
                         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <div>
                                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Title *</label>
-                                <input className="input-field" placeholder="e.g. Oceanfront Villa" value={addForm.title} onChange={e => setAddForm({ ...addForm, title: e.target.value })} />
+                                <input className="input-field" placeholder="e.g. Oceanfront Villa" value={addForm.title} onChange={e => handleAddFormChange('title', e.target.value)} />
                             </div>
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -363,36 +389,44 @@ export default function PropertiesPage() {
                                     rows={6}
                                     placeholder="Describe the property's unique features, view, and atmosphere..."
                                     value={addForm.description}
-                                    onChange={e => setAddForm({ ...addForm, description: e.target.value.slice(0, 1000) })}
+                                    onChange={e => handleAddFormChange('description', e.target.value.slice(0, 1000))}
                                     style={{ resize: 'vertical', minHeight: '120px', lineHeight: '1.5', padding: '12px' }}
                                 />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Price ($)</label>
-                                    <input className="input-field" type="number" placeholder="2500000" value={addForm.price} onChange={e => setAddForm({ ...addForm, price: e.target.value })} />
+                                    <input className="input-field" type="number" placeholder="2500000" value={addForm.price} onChange={e => handleAddFormChange('price', e.target.value)} />
                                 </div>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Parish</label>
-                                    <select className="input-field" value={addForm.parish} onChange={e => setAddForm({ ...addForm, parish: e.target.value })}>
+                                    <select className="input-field" value={addForm.parish} onChange={e => handleAddFormChange('parish', e.target.value)}>
                                         {PARISHES.map(p => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Bedrooms</label>
-                                    <input className="input-field" type="number" value={addForm.bedrooms} onChange={e => setAddForm({ ...addForm, bedrooms: e.target.value })} />
+                                    <input className="input-field" type="number" value={addForm.bedrooms} onChange={e => handleAddFormChange('bedrooms', e.target.value)} />
                                 </div>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Bathrooms</label>
-                                    <input className="input-field" type="number" value={addForm.bathrooms} onChange={e => setAddForm({ ...addForm, bathrooms: e.target.value })} />
+                                    <input className="input-field" type="number" value={addForm.bathrooms} onChange={e => handleAddFormChange('bathrooms', e.target.value)} />
                                 </div>
                             </div>
                             <div style={{ padding: 12, background: 'var(--color-accent-glow)', borderRadius: 10, fontSize: 13, color: 'var(--color-accent-light)' }}>
                                 <Sparkles size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
                                 AI will automatically generate SEO content, classify buyer persona, and assess market competitiveness within ~2 minutes.
                             </div>
-                            <button className="btn-primary" onClick={handleAdd} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
-                                <Plus size={16} /> Add Property
+                            <button className="btn-primary" onClick={handleAdd} disabled={submitting || !addForm.title} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
+                                {submitting ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span className="spinner" /> Adding...
+                                    </span>
+                                ) : (
+                                    <>
+                                        <Plus size={16} /> Add Property
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -412,7 +446,7 @@ export default function PropertiesPage() {
                         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <div>
                                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Title *</label>
-                                <input className="input-field" placeholder="e.g. Oceanfront Villa" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} />
+                                <input className="input-field" placeholder="e.g. Oceanfront Villa" value={editForm.title} onChange={e => handleEditFormChange('title', e.target.value)} />
                             </div>
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -426,28 +460,28 @@ export default function PropertiesPage() {
                                     rows={6}
                                     placeholder="Describe the property..."
                                     value={editForm.description}
-                                    onChange={e => setEditForm({ ...editForm, description: e.target.value.slice(0, 1000) })}
+                                    onChange={e => handleEditFormChange('description', e.target.value.slice(0, 1000))}
                                     style={{ resize: 'vertical', minHeight: '120px', lineHeight: '1.5', padding: '12px' }}
                                 />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Price ($)</label>
-                                    <input className="input-field" type="number" placeholder="2500000" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} />
+                                    <input className="input-field" type="number" placeholder="2500000" value={editForm.price} onChange={e => handleEditFormChange('price', e.target.value)} />
                                 </div>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Parish</label>
-                                    <select className="input-field" value={editForm.parish} onChange={e => setEditForm({ ...editForm, parish: e.target.value })}>
+                                    <select className="input-field" value={editForm.parish} onChange={e => handleEditFormChange('parish', e.target.value)}>
                                         {PARISHES.map(p => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Bedrooms</label>
-                                    <input className="input-field" type="number" value={editForm.bedrooms} onChange={e => setEditForm({ ...editForm, bedrooms: e.target.value })} />
+                                    <input className="input-field" type="number" value={editForm.bedrooms} onChange={e => handleEditFormChange('bedrooms', e.target.value)} />
                                 </div>
                                 <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Bathrooms</label>
-                                    <input className="input-field" type="number" value={editForm.bathrooms} onChange={e => setEditForm({ ...editForm, bathrooms: e.target.value })} />
+                                    <input className="input-field" type="number" value={editForm.bathrooms} onChange={e => handleEditFormChange('bathrooms', e.target.value)} />
                                 </div>
                             </div>
                             <button className="btn-primary" onClick={handleEdit} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
