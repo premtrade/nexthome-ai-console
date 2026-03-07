@@ -65,9 +65,9 @@ export interface DashboardData {
 }
 
 export const PARISHES = [
-    'Christ Church', 'St. Andrew', 'St. George', 'St. James',
-    'St. John', 'St. Joseph', 'St. Lucy', 'St. Michael',
-    'St. Peter', 'St. Philip', 'St. Thomas'
+    'Kingston', 'St. Andrew', 'St. Catherine', 'St. James', 'St. Thomas',
+    'Portland', 'St. Mary', 'St. Ann', 'Manchester', 'Clarendon',
+    'St. Elizabeth', 'Westmoreland', 'Hanover', 'Trelawny'
 ];
 
 export function formatPrice(price: string | number): string {
