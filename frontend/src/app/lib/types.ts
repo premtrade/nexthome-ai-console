@@ -9,6 +9,7 @@ export interface Property {
     bathrooms: string;
     lot_size: string;
     status: string;
+    image_url: string;
     ai_processed: string | boolean;
     seo_description: string;
     meta_title: string;

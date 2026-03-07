@@ -6,7 +6,7 @@ import { formatPrice, timeAgo, getCompBadgeClass, getPersonaIcon, PARISHES } fro
 import type { Property } from '@/app/lib/types';
 import {
     Plus, Search, RefreshCw, X, MapPin, Bed, Bath,
-    DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown, Edit2
+    DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown, Edit2, Image
 } from 'lucide-react';
 
 // Memoized form handlers to prevent unnecessary re-renders
@@ -25,8 +25,8 @@ export default function PropertiesPage() {
     const [showAdd, setShowAdd] = useState(false);
     const [showEdit, setShowEdit] = useState(false);
     const [enriching, setEnriching] = useState<string | null>(null);
-    const [addForm, setAddForm] = useState({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2' });
-    const [editForm, setEditForm] = useState({ id: '', title: '', description: '', price: '', parish: '', bedrooms: '', bathrooms: '' });
+    const [addForm, setAddForm] = useState({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2', image_url: '' });
+    const [editForm, setEditForm] = useState({ id: '', title: '', description: '', price: '', parish: '', bedrooms: '', bathrooms: '', image_url: '' });
     const [tab, setTab] = useState<'seo' | 'persona' | 'market'>('seo');
     const [submitting, setSubmitting] = useState(false);
 
@@ -69,9 +69,10 @@ export default function PropertiesPage() {
                 parish: addForm.parish,
                 bedrooms: parseInt(addForm.bedrooms) || 0,
                 bathrooms: parseInt(addForm.bathrooms) || 0,
+                image_url: addForm.image_url || null,
             });
             setShowAdd(false);
-            setAddForm({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2' });
+            setAddForm({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2', image_url: '' });
         } finally {
             setSubmitting(false);
         }
@@ -343,7 +344,8 @@ export default function PropertiesPage() {
                                         price: selected.price.toString(),
                                         parish: selected.parish || 'St. James',
                                         bedrooms: selected.bedrooms.toString(),
-                                        bathrooms: selected.bathrooms.toString()
+                                        bathrooms: selected.bathrooms.toString(),
+                                        image_url: (selected as any).image_url || ''
                                     });
                                     setShowEdit(true);
                                 }} style={{ flex: 1 }}>
@@ -373,6 +375,53 @@ export default function PropertiesPage() {
                             </button>
                         </div>
                         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            {/* Image Upload */}
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Property Image</label>
+                                {addForm.image_url ? (
+                                    <div style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
+                                        <img src={addForm.image_url} alt="Property" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
+                                        <button 
+                                            onClick={() => handleAddFormChange('image_url', '')}
+                                            style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, border: '2px dashed var(--color-border)', borderRadius: 8, cursor: 'pointer', background: 'var(--color-bg-secondary)' }}>
+                                        <Image size={32} style={{ color: 'var(--color-text-muted)', marginBottom: 8 }} />
+                                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Click to upload property image</span>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const formData = new FormData();
+                                                    formData.append('file', file);
+                                                    setSubmitting(true);
+                                                    try {
+                                                        const res = await fetch('/api/upload', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.url) {
+                                                            handleAddFormChange('image_url', data.url);
+                                                        }
+                                                    } catch (err) {
+                                                        console.error('Upload failed:', err);
+                                                    } finally {
+                                                        setSubmitting(false);
+                                                    }
+                                                }
+                                            }}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
                             <div>
                                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>Title *</label>
                                 <input className="input-field" placeholder="e.g. Oceanfront Villa" value={addForm.title} onChange={e => handleAddFormChange('title', e.target.value)} />

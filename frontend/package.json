@@ -14,6 +14,7 @@
     "db:push": "node migrate_railway.js"
   },
   "dependencies": {
+    "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.575.0",
     "next": "15.5.12",

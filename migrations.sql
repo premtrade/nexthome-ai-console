@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS properties (
     lot_size NUMERIC(15, 2),
     amenities JSONB DEFAULT '[]'::jsonb,
     status TEXT DEFAULT 'active',
+    image_url TEXT,
     assigned_agent_id UUID,
     seo_description TEXT,
     meta_title TEXT,
