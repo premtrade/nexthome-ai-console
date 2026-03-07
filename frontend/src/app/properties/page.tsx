@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useData } from '@/app/lib/useData';
-import { formatPrice, timeAgo, getCompBadgeClass, getPersonaIcon, PARISHES } from '@/app/lib/types';
+import { formatPrice, formatFullPrice, calculateAcquisitionCosts, timeAgo, getCompBadgeClass, getPersonaIcon, PARISHES, PARISH_COORDS, type Currency } from '@/app/lib/types';
 import type { Property } from '@/app/lib/types';
 import {
     Plus, Search, RefreshCw, X, MapPin, Bed, Bath,
-    DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown, Edit2, Image
+    DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown, Edit2, Image, Map, Share2, Calculator, Phone
 } from 'lucide-react';
 
 // Memoized form handlers to prevent unnecessary re-renders
@@ -25,6 +25,10 @@ export default function PropertiesPage() {
     const [showAdd, setShowAdd] = useState(false);
     const [showEdit, setShowEdit] = useState(false);
     const [enriching, setEnriching] = useState<string | null>(null);
+    const [currency, setCurrency] = useState<Currency>('USD');
+    const [showMap, setShowMap] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(false);
+    const [calculatorPrice, setCalculatorPrice] = useState('');
     const [addForm, setAddForm] = useState({ title: '', description: '', price: '', parish: 'St. James', bedrooms: '3', bathrooms: '2', image_url: '' });
     const [editForm, setEditForm] = useState({ id: '', title: '', description: '', price: '', parish: '', bedrooms: '', bathrooms: '', image_url: '' });
     const [tab, setTab] = useState<'seo' | 'persona' | 'market'>('seo');
@@ -38,6 +42,79 @@ export default function PropertiesPage() {
     const handleEditFormChange = useCallback((field: string, value: string) => {
         setEditForm(prev => ({ ...prev, [field]: value }));
     }, []);
+
+    // Calculate acquisition costs for calculator
+    const calculatorCosts = useMemo(() => {
+        const price = parseFloat(calculatorPrice) || 0;
+        return calculateAcquisitionCosts(price);
+    }, [calculatorPrice]);
+
+    // WhatsApp share URL generator
+    const getWhatsAppUrl = (property: Property) => {
+        const message = `🏠 *${property.title}*\n\n💰 Price: ${formatFullPrice(property.price, currency)}\n📍 ${property.parish}\n🛏️ ${property.bedrooms} beds • ${property.bathrooms} baths\n\n${property.description?.slice(0, 100)}...\n\nInterested!`;
+        return `https://wa.me/?text=${encodeURIComponent(message)}`;
+    };
+
+    // Property flyer/print function
+    const generateFlyer = (property: Property) => {
+        const printContent = `
+            <html>
+            <head>
+                <title>Property Flyer - ${property.title}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                    .header { background: #1a1a2e; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .title { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+                    .price { font-size: 36px; font-weight: bold; color: #00d4aa; }
+                    .details { display: flex; justify-content: center; gap: 30px; padding: 20px; background: #f5f5f5; }
+                    .detail { text-align: center; }
+                    .detail-label { font-size: 12px; color: #666; }
+                    .detail-value { font-size: 20px; font-weight: bold; }
+                    .description { padding: 30px; line-height: 1.6; }
+                    .footer { background: #1a1a2e; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; }
+                    .contact { font-size: 18px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="title">${property.title}</div>
+                    <div class="price">${formatFullPrice(property.price, currency)}</div>
+                </div>
+                <div class="details">
+                    <div class="detail">
+                        <div class="detail-label">PARISH</div>
+                        <div class="detail-value">${property.parish || 'N/A'}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="detail-label">BEDROOMS</div>
+                        <div class="detail-value">${property.bedrooms}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="detail-label">BATHROOMS</div>
+                        <div class="detail-value">${property.bathrooms}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="detail-label">LOT SIZE</div>
+                        <div class="detail-value">${property.lot_size || 'N/A'}</div>
+                    </div>
+                </div>
+                <div class="description">
+                    <h3>Description</h3>
+                    <p>${property.description || 'No description available.'}</p>
+                </div>
+                <div class="footer">
+                    <div class="contact">Contact us to schedule a viewing!</div>
+                </div>
+            </body>
+            </html>
+        `;
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    };
 
     if (loading || !data) {
         return (
@@ -136,6 +213,31 @@ export default function PropertiesPage() {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
+                    {/* Currency Toggle */}
+                    <button 
+                        className="btn-secondary" 
+                        onClick={() => setCurrency(c => c === 'USD' ? 'JMD' : 'USD')}
+                        title={`Switch to ${currency === 'USD' ? 'JMD' : 'USD'}`}
+                        style={{ minWidth: 70, fontWeight: 600 }}
+                    >
+                        {currency === 'USD' ? '$USD' : 'J$JMD'}
+                    </button>
+                    {/* Map Toggle */}
+                    <button 
+                        className={`btn-secondary ${showMap ? 'btn-primary' : ''}`} 
+                        onClick={() => setShowMap(!showMap)}
+                        title={showMap ? 'List View' : 'Map View'}
+                    >
+                        <Map size={14} /> {showMap ? 'List' : 'Map'}
+                    </button>
+                    {/* Calculator */}
+                    <button 
+                        className="btn-secondary" 
+                        onClick={() => setShowCalculator(true)}
+                        title="Property Cost Calculator"
+                    >
+                        <Calculator size={14} />
+                    </button>
                     <button className="btn-secondary" onClick={refresh}><RefreshCw size={14} /></button>
                     <button className="btn-primary" onClick={() => setShowAdd(true)}>
                         <Plus size={16} /> Add Property
@@ -160,6 +262,97 @@ export default function PropertiesPage() {
                 </select>
             </div>
 
+            {/* Map View */}
+            {showMap && (
+                <div style={{ marginBottom: 24 }}>
+                    <div style={{ 
+                        height: 400, 
+                        borderRadius: 16, 
+                        overflow: 'hidden',
+                        border: '1px solid var(--color-border)',
+                        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+                        position: 'relative'
+                    }}>
+                        {/* Simple Jamaica Map using CSS Grid - representing parishes */}
+                        <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(7, 1fr)', 
+                            gridTemplateRows: 'repeat(3, 1fr)',
+                            height: '100%',
+                            padding: 20,
+                            gap: 8
+                        }}>
+                            {PARISHES.map(parish => {
+                                const coords = PARISH_COORDS[parish];
+                                const propertiesInParish = filtered.filter(p => p.parish === parish);
+                                return (
+                                    <div
+                                        key={parish}
+                                        onClick={() => setFilterParish(parish)}
+                                        style={{
+                                            background: filterParish === parish ? 'var(--color-accent)' : propertiesInParish.length > 0 ? 'rgba(0, 212, 170, 0.3)' : 'rgba(255,255,255,0.05)',
+                                            borderRadius: 8,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            border: filterParish === parish ? '2px solid var(--color-accent-light)' : '1px solid rgba(255,255,255,0.1)',
+                                        }}
+                                        title={`${parish}: ${propertiesInParish.length} properties`}
+                                    >
+                                        <span style={{ fontSize: 10, fontWeight: 600, color: filterParish === parish ? '#000' : 'rgba(255,255,255,0.8)', textAlign: 'center' }}>
+                                            {parish.replace('St. ', 'St.')}
+                                        </span>
+                                        {propertiesInParish.length > 0 && (
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: filterParish === parish ? '#000' : 'var(--color-accent-light)' }}>
+                                                {propertiesInParish.length}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {/* Legend */}
+                        <div style={{ 
+                            position: 'absolute', 
+                            bottom: 16, 
+                            left: 16, 
+                            background: 'rgba(0,0,0,0.8)', 
+                            padding: '8px 12px', 
+                            borderRadius: 8,
+                            fontSize: 11,
+                            display: 'flex',
+                            gap: 12
+                        }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(0, 212, 170, 0.3)' }} /> Properties
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-accent)' }} /> Selected
+                            </span>
+                        </div>
+                    </div>
+                    {filterParish && (
+                        <button 
+                            onClick={() => setFilterParish('')}
+                            style={{ 
+                                marginTop: 8, 
+                                background: 'var(--color-bg-secondary)', 
+                                border: '1px solid var(--color-border)',
+                                padding: '4px 12px',
+                                borderRadius: 6,
+                                fontSize: 12,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Clear filter: {filterParish} ({filtered.length} properties)
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Property Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340, 1fr))', gap: 20 }}>
                 {filtered.map((p, i) => (
@@ -180,7 +373,7 @@ export default function PropertiesPage() {
                                     </div>
                                 </div>
                                 <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-accent-light)' }}>
-                                    {formatPrice(p.price)}
+                                    {formatPrice(p.price, currency)}
                                 </div>
                             </div>
 
@@ -249,7 +442,7 @@ export default function PropertiesPage() {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
                                 <div style={{ padding: 12, background: 'var(--color-bg-primary)', borderRadius: 10, border: '1px solid var(--color-border)' }}>
                                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>PRICE</div>
-                                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-accent-light)' }}>{formatPrice(selected.price)}</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-accent-light)' }}>{formatPrice(selected.price, currency)}</div>
                                 </div>
                                 <div style={{ padding: 12, background: 'var(--color-bg-primary)', borderRadius: 10, border: '1px solid var(--color-border)' }}>
                                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>PARISH</div>
@@ -356,6 +549,35 @@ export default function PropertiesPage() {
                                 </button>
                                 <button className="btn-secondary" onClick={() => handleDelete(selected.id)} style={{ color: 'var(--color-rose)' }}>
                                     <Trash2 size={14} />
+                                </button>
+                            </div>
+                            
+                            {/* Share & WhatsApp Actions */}
+                            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                                <a
+                                    href={getWhatsAppUrl(selected)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-secondary"
+                                    style={{ 
+                                        flex: 1, 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        gap: 8,
+                                        background: '#25D366',
+                                        color: 'white',
+                                        textDecoration: 'none'
+                                    }}
+                                >
+                                    <Phone size={14} /> WhatsApp
+                                </a>
+                                <button 
+                                    className="btn-secondary" 
+                                    onClick={() => generateFlyer(selected)}
+                                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                >
+                                    <Share2 size={14} /> Generate Flyer
                                 </button>
                             </div>
                         </div>
@@ -536,6 +758,95 @@ export default function PropertiesPage() {
                             <button className="btn-primary" onClick={handleEdit} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
                                 <RefreshCw size={16} /> Update Property
                             </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Property Acquisition Cost Calculator Modal */}
+            {showCalculator && (
+                <>
+                    <div className="detail-panel-overlay" onClick={() => setShowCalculator(false)} />
+                    <div className="detail-panel animate-slide-in" style={{ maxWidth: 500 }}>
+                        <div style={{ padding: 24, borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Property Cost Calculator</h2>
+                                <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Estimate acquisition costs for Jamaican properties</p>
+                            </div>
+                            <button onClick={() => setShowCalculator(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: 24 }}>
+                            <div style={{ marginBottom: 20 }}>
+                                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, display: 'block' }}>
+                                    Property Price (USD)
+                                </label>
+                                <input 
+                                    className="input-field" 
+                                    type="number" 
+                                    placeholder="Enter price in USD"
+                                    value={calculatorPrice}
+                                    onChange={e => setCalculatorPrice(e.target.value)}
+                                />
+                                <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                                    Enter the USD price - costs will be calculated in JMD
+                                </p>
+                            </div>
+
+                            {calculatorPrice && parseFloat(calculatorPrice) > 0 && (
+                                <div style={{ marginTop: 20 }}>
+                                    <div style={{ 
+                                        padding: 16, 
+                                        background: 'var(--color-accent-glow)', 
+                                        borderRadius: 12,
+                                        marginBottom: 16 
+                                    }}>
+                                        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>TOTAL ACQUISITION COST</div>
+                                        <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-accent-light)' }}>
+                                            J${calculatorCosts.total.toLocaleString('en-JM', { maximumFractionDigits: 0 })}
+                                        </div>
+                                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                                            ≈ ${(parseFloat(calculatorPrice) * 1.15).toLocaleString()} USD (including costs)
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {calculatorCosts.breakdown.map((item, i) => (
+                                            <div key={i} style={{ 
+                                                display: 'flex', 
+                                                justifyContent: 'space-between', 
+                                                alignItems: 'center',
+                                                padding: 12,
+                                                background: 'var(--color-bg-secondary)',
+                                                borderRadius: 8
+                                            }}>
+                                                <div>
+                                                    <div style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</div>
+                                                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{item.percentage.toFixed(1)}%</div>
+                                                </div>
+                                                <div style={{ fontSize: 16, fontWeight: 600 }}>
+                                                    J${item.amount.toLocaleString('en-JM', { maximumFractionDigits: 0 })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ 
+                                        marginTop: 16, 
+                                        padding: 12, 
+                                        background: 'var(--color-bg-secondary)', 
+                                        borderRadius: 8,
+                                        fontSize: 11,
+                                        color: 'var(--color-text-muted)',
+                                        lineHeight: 1.5
+                                    }}>
+                                        <strong>Note:</strong> These are estimates based on typical Jamaican rates. 
+                                        Stamp duty: 6-8% based on property value. 
+                                        Legal fees include GCT (15%). Actual costs may vary - consult a Jamaican attorney.
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </>
