@@ -8,6 +8,7 @@ import {
     Plus, Search, RefreshCw, X, MapPin, Bed, Bath,
     DollarSign, Sparkles, RotateCcw, Trash2, Eye, ChevronDown, Edit2, Image, Map, Share2, Calculator, Phone
 } from 'lucide-react';
+import Link from 'next/link';
 
 // Memoized form handlers to prevent unnecessary re-renders
 const useFormHandlers = (setForm: React.Dispatch<React.SetStateAction<any>>) => {
@@ -205,20 +206,22 @@ export default function PropertiesPage() {
     return (
         <div className="animate-fade-in">
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <div>
-                    <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Properties</h1>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>
-                        {filtered.length} properties · {data.properties.filter(p => isProcessed(p)).length} AI processed
-                    </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Properties</h1>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>
+                            {filtered.length} properties · {data.properties.filter(p => isProcessed(p)).length} AI processed
+                        </p>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {/* Currency Toggle */}
                     <button 
                         className="btn-secondary" 
                         onClick={() => setCurrency(c => c === 'USD' ? 'JMD' : 'USD')}
                         title={`Switch to ${currency === 'USD' ? 'JMD' : 'USD'}`}
-                        style={{ minWidth: 70, fontWeight: 600 }}
+                        style={{ minWidth: 60, fontWeight: 600, padding: '8px 12px', fontSize: 12 }}
                     >
                         {currency === 'USD' ? '$USD' : 'J$JMD'}
                     </button>
@@ -227,6 +230,7 @@ export default function PropertiesPage() {
                         className={`btn-secondary ${showMap ? 'btn-primary' : ''}`} 
                         onClick={() => setShowMap(!showMap)}
                         title={showMap ? 'List View' : 'Map View'}
+                        style={{ padding: '8px 12px', fontSize: 12 }}
                     >
                         <Map size={14} /> {showMap ? 'List' : 'Map'}
                     </button>
@@ -235,13 +239,14 @@ export default function PropertiesPage() {
                         className="btn-secondary" 
                         onClick={() => setShowCalculator(true)}
                         title="Property Cost Calculator"
+                        style={{ padding: '8px 12px', fontSize: 12 }}
                     >
                         <Calculator size={14} />
                     </button>
-                    <button className="btn-secondary" onClick={refresh}><RefreshCw size={14} /></button>
-                    <button className="btn-primary" onClick={() => setShowAdd(true)}>
-                        <Plus size={16} /> Add Property
-                    </button>
+                    <button className="btn-secondary" onClick={refresh} style={{ padding: '8px 12px' }}><RefreshCw size={14} /></button>
+                    <Link href="/properties/add" className="btn-primary" style={{ padding: '8px 12px', fontSize: 12 }}>
+                        <Plus size={16} /> Add
+                    </Link>
                 </div>
             </div>
 
@@ -266,7 +271,7 @@ export default function PropertiesPage() {
             {showMap && (
                 <div style={{ marginBottom: 24 }}>
                     <div style={{ 
-                        height: 400, 
+                        height: 300, 
                         borderRadius: 16, 
                         overflow: 'hidden',
                         border: '1px solid var(--color-border)',
@@ -276,11 +281,11 @@ export default function PropertiesPage() {
                         {/* Simple Jamaica Map using CSS Grid - representing parishes */}
                         <div style={{ 
                             display: 'grid', 
-                            gridTemplateColumns: 'repeat(7, 1fr)', 
-                            gridTemplateRows: 'repeat(3, 1fr)',
+                            gridTemplateColumns: 'repeat(4, 1fr)', 
+                            gridTemplateRows: 'repeat(5, 1fr)',
                             height: '100%',
-                            padding: 20,
-                            gap: 8
+                            padding: 12,
+                            gap: 6
                         }}>
                             {PARISHES.map(parish => {
                                 const coords = PARISH_COORDS[parish];

@@ -69,7 +69,7 @@ export default function AddPropertyPage() {
             </div>
 
             {/* Form */}
-            <div className="glass-card" style={{ padding: 32, maxWidth: 800 }}>
+            <div className="glass-card" style={{ padding: 24, width: '100%', maxWidth: '100%' }}>
                 <div style={{ display: 'grid', gap: 24 }}>
                     {/* Title */}
                     <div>
@@ -147,7 +147,7 @@ export default function AddPropertyPage() {
                     </div>
 
                     {/* Bedrooms & Bathrooms */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                         <div>
                             <label style={{ 
                                 display: 'block', 

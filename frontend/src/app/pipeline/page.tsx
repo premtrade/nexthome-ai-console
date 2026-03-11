@@ -43,12 +43,14 @@ export default function PipelinePage() {
     return (
         <div className="animate-fade-in">
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-                <div>
-                    <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>AI Pipeline</h1>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Real-time workflow monitoring & execution history</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>AI Pipeline</h1>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Real-time workflow monitoring & execution history</p>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div className="pulse-dot" style={{
                             background: isLive ? 'var(--color-emerald)' : latestStatus === 'success' ? 'var(--color-emerald)' : 'var(--color-amber)',
