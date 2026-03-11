@@ -127,7 +127,7 @@ export default function Dashboard() {
         <div className="glass-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12, border: '1px solid var(--color-accent-glow)' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Quick Actions</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <Link href="/properties" className="btn-primary" style={{ padding: '8px 12px', fontSize: 12, justifyContent: 'center' }}>
+            <Link href="/properties/add" className="btn-primary" style={{ padding: '8px 12px', fontSize: 12, justifyContent: 'center' }}>
               Add Property
             </Link>
             <button className="btn-secondary" onClick={() => refresh()} disabled={isRefreshing} style={{ padding: '8px 12px', fontSize: 12, justifyContent: 'center', gap: 6 }}>
@@ -167,7 +167,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 32, marginBottom: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32, marginBottom: 32 }}>
         {/* Main Feed: Recent Properties */}
         <div className="table-container glass-card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

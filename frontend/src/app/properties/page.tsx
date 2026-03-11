@@ -246,16 +246,16 @@ export default function PropertiesPage() {
             </div>
 
             {/* Filters */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-                <div style={{ position: 'relative', flex: 1 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+                <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 150 }}>
                     <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                     <input className="input-field" placeholder="Search properties..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 40 }} />
                 </div>
-                <select className="input-field" style={{ width: 180 }} value={filterParish} onChange={e => setFilterParish(e.target.value)}>
+                <select className="input-field" style={{ flex: '0 1 150px', minWidth: 120 }} value={filterParish} onChange={e => setFilterParish(e.target.value)}>
                     <option value="">All Parishes</option>
                     {PARISHES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <select className="input-field" style={{ width: 160 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <select className="input-field" style={{ flex: '0 1 130px', minWidth: 110 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                     <option value="">All Status</option>
                     <option value="processed">AI Processed</option>
                     <option value="pending">Pending</option>
@@ -354,7 +354,7 @@ export default function PropertiesPage() {
             )}
 
             {/* Property Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
                 {filtered.map((p, i) => (
                     <div key={p.id} className="property-card animate-fade-in" style={{ animationDelay: `${i * 50}ms`, cursor: 'pointer' }} onClick={() => setSelected(p)}>
                         {/* Color Bar */}

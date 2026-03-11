@@ -84,7 +84,7 @@ export default function PipelinePage() {
             </div>
 
             {/* Stats Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 28 }}>
                 <div className="kpi-card emerald">
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Successful</div>
                     <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--color-emerald)' }}>{successCount}</div>
